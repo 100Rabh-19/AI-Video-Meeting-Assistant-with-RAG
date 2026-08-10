@@ -1,9 +1,20 @@
 import os
+from dotenv import load_dotenv
 from utils.Audio_processor import download_youtube_audio, convert_to_wav, chunk_audio
 from core.transcriber import transcribe_all
 
+# Load environment variables from .env file (for Sarvam AI / Whisper settings)
+load_dotenv()
 
-def test_full_pipeline(url: str):
+
+def test_full_pipeline(url: str, language: str = "hinglish"):
+    """
+    Runs the full end-to-end pipeline:
+    1. Downloads audio from YouTube.
+    2. Converts raw audio to 16kHz mono WAV format.
+    3. Splits audio into 5-minute chunks.
+    4. Transcribes chunks using Sarvam AI (for 'hinglish') or Whisper (for 'english').
+    """
     print("=" * 60)
     print("STEP 1: Downloading YouTube Audio...")
     print("=" * 60)
@@ -25,9 +36,10 @@ def test_full_pipeline(url: str):
         print(f"   Chunk {idx}: {c}")
 
     print("\n" + "=" * 60)
-    print("STEP 4: Transcribing Chunks with Whisper...")
+    engine_name = "Sarvam AI" if language.lower() == "hinglish" else "Whisper"
+    print(f"STEP 4: Transcribing Chunks with {engine_name} (language='{language}')...")
     print("=" * 60)
-    full_transcript = transcribe_all(chunks, translate=False)
+    full_transcript = transcribe_all(chunks, language=language)
 
     print("\n" + "=" * 60)
     print("Pipeline Completed Successfully!")
@@ -37,4 +49,18 @@ def test_full_pipeline(url: str):
 
 if __name__ == "__main__":
     test_url = "https://www.youtube.com/watch?v=J-JaGlLiU8k"
-    test_full_pipeline(test_url)
+    
+    # Set language="hinglish" for Sarvam AI or language="english" for Whisper
+    transcript = test_full_pipeline(test_url, language="hinglish")
+    
+    print("\n" + "=" * 60)
+    print("FINAL TRANSCRIPT:")
+    print("=" * 60)
+    print(transcript)
+    
+    # Save transcript to file for easy viewing
+    output_file = "transcript.txt"
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(transcript)
+    print(f"\n-> Saved complete transcript to: {os.path.abspath(output_file)}")
+
