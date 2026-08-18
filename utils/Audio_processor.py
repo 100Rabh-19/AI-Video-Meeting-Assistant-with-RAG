@@ -73,6 +73,7 @@ def chunk_audio(wav_path: str, chunk_minutes: int = 10) -> list[str]:
     return chunks
 
 
+
 if __name__ == "__main__":
     audio_file = download_youtube_audio("https://www.youtube.com/watch?v=mtiOK2QG9Q0")
     print(f"Downloaded raw audio saved at: {audio_file}")
