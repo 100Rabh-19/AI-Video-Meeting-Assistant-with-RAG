@@ -22,7 +22,7 @@ def download_youtube_audio(url: str) -> str:
         "logtostderr": False,
         "overwrites": True,
         "restrictfilenames": True,
-        "extractor_args": {"youtube": {"player_client": ["android"]}},
+        "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)

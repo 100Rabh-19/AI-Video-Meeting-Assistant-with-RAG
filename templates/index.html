@@ -19,8 +19,8 @@
           <i class="fa-solid fa-brain-circuit"></i>
         </div>
         <div class="brand-text">
-          <h1>AI Meeting Assistant <span>RAG</span></h1>
-          <p class="subtitle">Video & Audio Intelligence with Hybrid Search & Chat Memory</p>
+          <h1>AI Meeting & Document Assistant <span>RAG</span></h1>
+          <p class="subtitle">Video, Audio & Image OCR Intelligence with Hybrid Search & Chat Memory</p>
         </div>
       </div>
 
@@ -70,18 +70,18 @@
             </div>
           </div>
 
-          <!-- Drag and Drop Upload Box -->
+          <!-- Drag and Drop Audio/Video Upload Box -->
           <div class="card glass-card">
             <div class="card-header">
               <i class="fa-solid fa-file-audio icon-upload"></i>
-              <h3>Upload Audio/Video File</h3>
+              <h3>Upload Audio / Video File</h3>
             </div>
-            
+            <p class="card-desc">Upload local meeting recordings, interviews, or voice notes for speech-to-text.</p>
             <div class="dropzone" id="dropzone">
-              <input type="file" id="fileInput" accept="audio/*,video/*" class="file-input-hidden" />
+              <input type="file" id="fileInput" accept="audio/*,video/*,.txt" class="file-input-hidden" />
               <div class="dropzone-content">
                 <i class="fa-solid fa-cloud-arrow-up drop-icon"></i>
-                <p class="drop-title">Drag & Drop your media file here</p>
+                <p class="drop-title">Drag & Drop audio/video file here</p>
                 <p class="drop-sub">or <span class="browse-link">browse device files</span></p>
                 <div class="supported-formats">
                   <span class="badge">MP3</span>
@@ -99,6 +99,48 @@
             </div>
           </div>
 
+          <!-- Image & Document OCR Upload Card -->
+          <div class="card glass-card span-full ocr-card">
+            <div class="card-header space-between">
+              <div class="title-with-icon">
+                <i class="fa-solid fa-camera-retro icon-ocr"></i>
+                <div>
+                  <h3>Image & Document OCR (PaddleOCR)</h3>
+                  <span class="badge-tag">New</span>
+                </div>
+              </div>
+              <span class="ocr-caption">Extract text from Receipts, Slides, Photos, Whiteboards & Invoices</span>
+            </div>
+            <p class="card-desc">Upload single or multiple images to transcribe visual text into a searchable transcript and chat with it instantly.</p>
+            
+            <div class="dropzone ocr-dropzone" id="ocrDropzone">
+              <input type="file" id="imageInput" accept="image/*" multiple class="file-input-hidden" />
+              <div class="dropzone-content" id="ocrDropzoneContent">
+                <i class="fa-solid fa-images drop-icon ocr-icon"></i>
+                <p class="drop-title">Drag & Drop images or document photos here</p>
+                <p class="drop-sub">or <span class="browse-link">browse image files</span> (Multiple files supported)</p>
+                <div class="supported-formats">
+                  <span class="badge">PNG</span>
+                  <span class="badge">JPG</span>
+                  <span class="badge">JPEG</span>
+                  <span class="badge">WEBP</span>
+                  <span class="badge">BMP</span>
+                </div>
+              </div>
+
+              <!-- Image Previews Container -->
+              <div id="imagePreviewContainer" class="image-preview-container hidden">
+                <div class="preview-header">
+                  <span id="imagePreviewCount"><i class="fa-solid fa-image"></i> 1 Image Selected</span>
+                  <button type="button" id="clearImagesBtn" class="btn-outline btn-sm">
+                    <i class="fa-solid fa-trash"></i> Remove All
+                  </button>
+                </div>
+                <div id="imageThumbnailsGrid" class="image-thumbnails-grid"></div>
+              </div>
+            </div>
+          </div>
+
           <!-- Local File System Browser Card -->
           <div class="card glass-card span-full">
             <div class="card-header">
@@ -108,7 +150,7 @@
                 <i class="fa-solid fa-folder-tree"></i> Browse Server Files
               </button>
             </div>
-            <p class="card-desc">Select pre-stored media or transcript files directly from your server's local file system.</p>
+            <p class="card-desc">Select media files, images, or transcripts stored directly on your server.</p>
             <div id="selectedFsPathDisplay" class="selected-fs-path hidden">
               <i class="fa-solid fa-check-circle"></i> Selected Server File: <code id="fsPathText"></code>
             </div>
@@ -117,7 +159,7 @@
           <!-- Processing Settings & Launch Bar -->
           <div class="card glass-card span-full settings-bar">
             <div class="setting-group">
-              <label for="languageSelect">Transcription Engine & Language:</label>
+              <label for="languageSelect">Audio Language Model:</label>
               <select id="languageSelect" class="form-select">
                 <option value="english" selected>Whisper (English - Local High Quality)</option>
                 <option value="hinglish">Sarvam AI (Hinglish / Hindi → English)</option>
@@ -215,7 +257,7 @@
           <div class="prompt-suggestions">
             <button class="chip" data-prompt="What were the main decisions made in this meeting?">💡 Key Decisions</button>
             <button class="chip" data-prompt="List all action items and assignees mentioned.">📌 Action Items</button>
-            <button class="chip" data-prompt="Summarize any risks or challenges discussed.">⚠️ Risks & Issues</button>
+            <button class="chip" data-prompt="Summarize the key information, items, or numbers extracted from this document/image.">📄 Document & OCR Summary</button>
             <button class="chip" data-prompt="What are the next steps outlined?">🚀 Next Steps</button>
           </div>
 

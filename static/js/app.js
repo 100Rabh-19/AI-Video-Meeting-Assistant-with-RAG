@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   // ── Global State Variables ──
   let selectedFile = null;
+  let selectedImages = [];
   let selectedFsPath = null;
   let activeTranscriptData = null;
   let currentFsPath = "";
@@ -18,6 +19,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const fileSelectedInfo = document.getElementById('fileSelectedInfo');
   const fileName = document.getElementById('fileName');
   const removeFileBtn = document.getElementById('removeFileBtn');
+
+  // OCR Image Dropzone Elements
+  const ocrDropzone = document.getElementById('ocrDropzone');
+  const imageInput = document.getElementById('imageInput');
+  const ocrDropzoneContent = document.getElementById('ocrDropzoneContent');
+  const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+  const imagePreviewCount = document.getElementById('imagePreviewCount');
+  const clearImagesBtn = document.getElementById('clearImagesBtn');
+  const imageThumbnailsGrid = document.getElementById('imageThumbnailsGrid');
+
   const openFsModalBtn = document.getElementById('openFsModalBtn');
   const selectedFsPathDisplay = document.getElementById('selectedFsPathDisplay');
   const fsPathText = document.getElementById('fsPathText');
@@ -71,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ── 2. Drag and Drop File Handling ──
+  // ── 2. Drag & Drop File Handling (Audio / Video) ──
   dropzone.addEventListener('click', (e) => {
     if (e.target.closest('#removeFileBtn')) return;
     fileInput.click();
@@ -94,20 +105,30 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   dropzone.addEventListener('drop', (e) => {
-    const files = e.dataTransfer.files;
+    const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      handleFileSelected(files[0]);
+      if (files[0].type.startsWith('image/')) {
+        handleImagesSelected(files);
+      } else {
+        handleFileSelected(files[0]);
+      }
     }
   });
 
   fileInput.addEventListener('change', (e) => {
     if (e.target.files.length > 0) {
-      handleFileSelected(e.target.files[0]);
+      const f = e.target.files[0];
+      if (f.type.startsWith('image/')) {
+        handleImagesSelected([f]);
+      } else {
+        handleFileSelected(f);
+      }
     }
   });
 
   function handleFileSelected(file) {
     selectedFile = file;
+    clearSelectedImages();
     selectedFsPath = null;
     selectedFsPathDisplay.classList.add('hidden');
     ytUrlInput.value = '';
@@ -125,7 +146,120 @@ document.addEventListener('DOMContentLoaded', () => {
     dropzone.querySelector('.dropzone-content').classList.remove('hidden');
   });
 
-  // ── 3. Server File System Browser Modal ──
+  // ── 3. OCR Image Dropzone & Multi-Image Handling ──
+  if (ocrDropzone) {
+    ocrDropzone.addEventListener('click', (e) => {
+      if (e.target.closest('#clearImagesBtn') || e.target.closest('.image-thumb-remove')) return;
+      imageInput.click();
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      ocrDropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        ocrDropzone.classList.add('dragover');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      ocrDropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        ocrDropzone.classList.remove('dragover');
+      });
+    });
+
+    ocrDropzone.addEventListener('drop', (e) => {
+      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/') || /\.(png|jpe?g|webp|bmp|tiff?)$/i.test(f.name));
+      if (files.length > 0) {
+        handleImagesSelected(files);
+      } else {
+        alert('Please drop valid image files (PNG, JPG, WEBP, BMP, TIFF).');
+      }
+    });
+
+    imageInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleImagesSelected(Array.from(e.target.files));
+      }
+    });
+
+    clearImagesBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      clearSelectedImages();
+    });
+  }
+
+  function handleImagesSelected(newFiles) {
+    // Clear other input modes
+    selectedFile = null;
+    fileInput.value = '';
+    fileSelectedInfo.classList.add('hidden');
+    dropzone.querySelector('.dropzone-content').classList.remove('hidden');
+
+    selectedFsPath = null;
+    selectedFsPathDisplay.classList.add('hidden');
+    ytUrlInput.value = '';
+
+    // Append new images without duplicates
+    newFiles.forEach(f => {
+      if (!selectedImages.some(existing => existing.name === f.name && existing.size === f.size)) {
+        selectedImages.push(f);
+      }
+    });
+
+    renderImagePreviews();
+  }
+
+  function clearSelectedImages() {
+    selectedImages = [];
+    if (imageInput) imageInput.value = '';
+    if (imageThumbnailsGrid) imageThumbnailsGrid.innerHTML = '';
+    if (imagePreviewContainer) imagePreviewContainer.classList.add('hidden');
+    if (ocrDropzoneContent) ocrDropzoneContent.classList.remove('hidden');
+  }
+
+  function renderImagePreviews() {
+    if (selectedImages.length === 0) {
+      clearSelectedImages();
+      return;
+    }
+
+    ocrDropzoneContent.classList.add('hidden');
+    imagePreviewContainer.classList.remove('hidden');
+
+    imagePreviewCount.innerHTML = `<i class="fa-solid fa-images"></i> ${selectedImages.length} Image${selectedImages.length > 1 ? 's' : ''} Ready for OCR`;
+    imageThumbnailsGrid.innerHTML = '';
+
+    selectedImages.forEach((imgFile, index) => {
+      const card = document.createElement('div');
+      card.className = 'image-thumb-card';
+
+      const objectUrl = URL.createObjectURL(imgFile);
+
+      card.innerHTML = `
+        <img src="${objectUrl}" alt="${imgFile.name}" />
+        <button type="button" class="image-thumb-remove" title="Remove image">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="image-thumb-info">
+          <div class="image-thumb-name" title="${imgFile.name}">${imgFile.name}</div>
+          <div class="image-thumb-size">${formatBytes(imgFile.size)}</div>
+        </div>
+      `;
+
+      card.querySelector('.image-thumb-remove').addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedImages.splice(index, 1);
+        URL.revokeObjectURL(objectUrl);
+        renderImagePreviews();
+      });
+
+      imageThumbnailsGrid.appendChild(card);
+    });
+  }
+
+  // ── 4. Server File System Browser Modal ──
   openFsModalBtn.addEventListener('click', () => {
     fsModal.classList.remove('hidden');
     loadFileSystemPath('');
@@ -177,15 +311,31 @@ document.addEventListener('DOMContentLoaded', () => {
     items.forEach(item => {
       const div = document.createElement('div');
       div.className = 'fs-item';
-      const iconClass = item.is_dir ? 'fa-folder' : (item.is_media ? 'fa-file-audio' : 'fa-file');
-      const iconColor = item.is_dir ? '#f59e0b' : (item.is_media ? '#06b6d4' : '#64748b');
+
+      let iconClass = 'fa-file';
+      let iconColor = '#64748b';
+      let typeLabel = 'File';
+
+      if (item.is_dir) {
+        iconClass = 'fa-folder';
+        iconColor = '#f59e0b';
+        typeLabel = 'Folder';
+      } else if (item.is_image) {
+        iconClass = 'fa-file-image';
+        iconColor = '#c084fc';
+        typeLabel = 'Image';
+      } else if (item.is_media) {
+        iconClass = 'fa-file-audio';
+        iconColor = '#06b6d4';
+        typeLabel = 'Media';
+      }
 
       div.innerHTML = `
         <div class="fs-item-name">
           <i class="fa-solid ${iconClass}" style="color:${iconColor}"></i>
           <span>${item.name}</span>
         </div>
-        <span class="badge">${item.is_dir ? 'Folder' : (item.size ? formatBytes(item.size) : 'File')}</span>
+        <span class="badge">${item.is_dir ? typeLabel : (item.size ? formatBytes(item.size) : typeLabel)}</span>
       `;
 
       div.addEventListener('click', () => {
@@ -208,6 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
       selectedFile = null;
       fileSelectedInfo.classList.add('hidden');
       dropzone.querySelector('.dropzone-content').classList.remove('hidden');
+      clearSelectedImages();
       ytUrlInput.value = '';
 
       fsPathText.textContent = selectedFsPath;
@@ -216,7 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ── 4. Main Processing Action ──
+  // ── 5. Main Processing Action ──
   processBtn.addEventListener('click', () => startProcessing());
   ytSubmitBtn.addEventListener('click', () => startProcessing('yt'));
 
@@ -228,31 +379,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const ytUrl = ytUrlInput.value.trim();
 
-    if (forcedType === 'yt' || (ytUrl && !selectedFile && !selectedFsPath)) {
+    if (forcedType === 'yt' || (ytUrl && !selectedFile && selectedImages.length === 0 && !selectedFsPath)) {
       if (!ytUrl) {
         alert('Please enter a valid YouTube URL');
         return;
       }
       endpoint = '/api/process/yt';
       payloadJson = { url: ytUrl, language: lang };
+      showProgressOverlay('Downloading & Transcribing YouTube...', 'Extracting audio stream, running speech recognition, and building RAG index.');
+    } else if (selectedImages.length > 0) {
+      if (selectedImages.length === 1) {
+        endpoint = '/api/process/upload';
+        formData.append('file', selectedImages[0]);
+        formData.append('language', 'english');
+      } else {
+        endpoint = '/api/process/images';
+        selectedImages.forEach(img => formData.append('files', img));
+      }
+      showProgressOverlay('Extracting Text via PaddleOCR...', `Recognizing visual text across ${selectedImages.length} image(s), generating summary, and indexing into RAG.`);
     } else if (selectedFile) {
+      const isImg = selectedFile.type.startsWith('image/') || /\.(png|jpe?g|webp|bmp|tiff?)$/i.test(selectedFile.name);
       endpoint = '/api/process/upload';
       formData.append('file', selectedFile);
       formData.append('language', lang);
+
+      if (isImg) {
+        showProgressOverlay('Running PaddleOCR...', 'Extracting text from image, creating summary, and indexing for AI chat.');
+      } else {
+        showProgressOverlay('Processing Media File...', 'Transcribing speech, summarizing key decisions, and building RAG index.');
+      }
     } else if (selectedFsPath) {
       endpoint = '/api/process/filesystem';
       payloadJson = { path: selectedFsPath, language: lang };
+
+      const isImg = /\.(png|jpe?g|webp|bmp|tiff?)$/i.test(selectedFsPath);
+      if (isImg) {
+        showProgressOverlay('Running PaddleOCR on Server Image...', 'Recognizing document text and creating RAG conversational index.');
+      } else {
+        showProgressOverlay('Processing Server File...', 'Transcribing audio/video, generating summary, and building RAG index.');
+      }
     } else {
-      alert('Please provide a YouTube URL, Drag & Drop an audio file, or select a file from the server file system.');
+      alert('Please provide a YouTube URL, an audio/video file, an image for OCR, or choose a file from the server file system.');
       return;
     }
 
-    showProgressOverlay('Processing Media...', 'Extracting audio, transcribing, summarizing, and indexing into RAG.');
     updateStatus('status-processing', 'Processing...');
 
     try {
       let response;
-      if (endpoint === '/api/process/upload') {
+      if (endpoint === '/api/process/upload' || endpoint === '/api/process/images') {
         response = await fetch(endpoint, { method: 'POST', body: formData });
       } else {
         response = await fetch(endpoint, {
@@ -443,4 +618,17 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/\n/g, '<br>')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   }
+
+  // ── Auto-Restore Active Session on Page Load ──
+  fetch('/api/session')
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.active) {
+        console.log('[Session] Restored active document session:', data.source);
+        activeTranscriptData = data;
+        renderDashboard(data);
+        updateStatus('status-ready', 'Indexed & Ready');
+      }
+    })
+    .catch(err => console.debug('[Session] No active session:', err));
 });

@@ -23,19 +23,31 @@ mistralai>=0.4.0                  # Official Mistral Python client
 
 # ── RAG Pipeline ──────────────────────────────────────────────────────────────
 chromadb>=0.5.0                   # Local vector store
+langchain-chroma>=0.1.0           # LangChain Chroma integration
+rank-bm25>=0.2.2                  # BM25 retriever support
 sentence-transformers>=3.0.0      # HuggingFace embedding models
 langchain-huggingface>=0.0.3      # LangChain ↔ HuggingFace embeddings bridge
 huggingface-hub>=0.23.0           # Model downloading from HuggingFace Hub
 tiktoken>=0.7.0                   # Token counting for text splitting
+
+# ── FastAPI Web Server ────────────────────────────────────────────────────────
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+python-multipart>=0.0.9             # Required for FastAPI file uploads / form data
 
 # ── Streamlit UI ──────────────────────────────────────────────────────────────
 streamlit>=1.35.0
 streamlit-extras>=0.4.0           # Additional Streamlit widgets / utilities
 watchdog>=4.0.0                   # File-change watcher (improves Streamlit hot-reload)
 
+
 # ── PDF & TXT Export ──────────────────────────────────────────────────────────
 reportlab>=4.2.0                  # PDF generation
 fpdf2>=2.7.9                      # Lightweight alternative PDF library
+
+# ── Optical Character Recognition (PaddleOCR) ─────────────────────────────────
+paddlepaddle>=3.2.0                  # Deep learning framework backend for PaddleOCR
+paddleocr>=3.7.0                     # Multilingual text & document OCR
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 python-dotenv>=1.0.0              # Load API keys from .env
